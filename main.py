@@ -1,4 +1,5 @@
 import os.path
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
 import helper
 import warnings
@@ -41,6 +42,8 @@ def load_vgg(sess, vgg_path):
     layer3_out = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
     layer4_out = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
     layer7_out = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
+
+    print(layer3_out.get_shape())
     
     return image_input, keep_prob, layer3_out, layer4_out, layer7_out
 tests.test_load_vgg(load_vgg, tf)
@@ -56,7 +59,33 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    return None
+
+    layer7_feat = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=1, padding='same', activation=tf.nn.relu)
+
+    output = tf.layers.conv2d_transpose(layer7_feat, filters=num_classes, kernel_size=4, strides=32, padding="same",
+                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    
+    conv7_2x = tf.layers.conv2d_transpose(layer7_feat, filters=num_classes, kernel_size=4, strides=2, padding="same",
+                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+
+    layer4_feat = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=1, padding="same", activation=tf.nn.relu,
+                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    add47 = tf.add(conv7_2x, layer4_feat)
+
+
+    layer3_feat = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=1, padding="same", activation=tf.nn.relu,
+                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    add47_2x = tf.layers.conv2d_transpose(add47, filters=num_classes, kernel_size=4, strides=2, padding="same",
+                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    add_347 = tf.add(add47_2x, layer3_feat)
+
+    add_347_8x = tf.layers.conv2d_transpose(add47, filters=num_classes, kernel_size=4, strides=8, padding="same",
+                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    return add_347_8x
 tests.test_layers(layers)
 
 
@@ -118,6 +147,7 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
+        a = load_vgg(sess, vgg_path)
 
         # TODO: Train NN using the train_nn function
 

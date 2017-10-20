@@ -42,8 +42,6 @@ def load_vgg(sess, vgg_path):
     layer3_out = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
     layer4_out = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
     layer7_out = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
-
-    print(layer3_out.get_shape())
     
     return image_input, keep_prob, layer3_out, layer4_out, layer7_out
 tests.test_load_vgg(load_vgg, tf)
@@ -60,32 +58,34 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     # TODO: Implement function
 
-    layer7_feat = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=1, padding='same', activation=tf.nn.relu)
-
-    output = tf.layers.conv2d_transpose(layer7_feat, filters=num_classes, kernel_size=4, strides=32, padding="same",
-                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     
-    conv7_2x = tf.layers.conv2d_transpose(layer7_feat, filters=num_classes, kernel_size=4, strides=2, padding="same",
-                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    predict1 = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=1, padding='same',
+                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+        
+    
+    conv7_4x = tf.layers.conv2d_transpose(predict1, filters=num_classes, kernel_size=4, strides=4, padding="same",
+                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
 
-    layer4_feat = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=1, padding="same", activation=tf.nn.relu,
-                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    predict2 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=1, padding='same',
+                                     kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
-    add47 = tf.add(conv7_2x, layer4_feat)
+    pool4_2x = tf.layers.conv2d_transpose(predict2, filters=num_classes, kernel_size=4, strides=2, padding="same",
+                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    
+    pool3 = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=1, padding='same',
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
 
-    layer3_feat = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=1, padding="same", activation=tf.nn.relu,
-                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    fuse = conv7_4x + pool4_2x + pool3
 
-    add47_2x = tf.layers.conv2d_transpose(add47, filters=num_classes, kernel_size=4, strides=2, padding="same",
-                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    upsampled_8x = tf.layers.conv2d_transpose(fuse, filters=num_classes, kernel_size=4, strides=8, padding="same",
+                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
-    add_347 = tf.add(add47_2x, layer3_feat)
+    return upsampled_8x
 
-    add_347_8x = tf.layers.conv2d_transpose(add47, filters=num_classes, kernel_size=4, strides=8, padding="same",
-                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-    return add_347_8x
+
 tests.test_layers(layers)
 
 
@@ -128,7 +128,18 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
-    pass
+    sess.run(tf.global_variables_initializer())
+    for i in range(epochs):
+        #t0 = time.time()
+        j = 0
+        for image, label in get_batches_fn(batch_size):
+            j += 1
+            print("batch: ", j)
+            image = image.astype(float)
+            label = label.astype(float)
+            _,loss = sess.run([train_op, cross_entropy_loss], feed_dict={input_image: image, correct_label: label, keep_prob:0.5, learning_rate:0.001})
+            print("loss =", loss)
+
 tests.test_train_nn(train_nn)
 
 
@@ -146,6 +157,18 @@ def run():
     # You'll need a GPU with at least 10 teraFLOPS to train on.
     #  https://www.cityscapes-dataset.com/
 
+    # Add some variables
+    #correct_label = tf.placeholder(tf.float64, shape=[None,160,576,num_classes])
+    #input_image = tf.placeholder(tf.float64, shape=[None,160,576,3])
+    
+    correct_label = tf.placeholder(tf.float32, shape=[None,160,576,num_classes],name='my_correct_label')
+    learning_rate = tf.placeholder(tf.float32, name='my_learning_rate')
+
+    #input_image = None
+    #learning_rate = None
+    epochs = 1
+    batch_size = 2
+
     with tf.Session() as sess:
         # Path to vgg model
         vgg_path = os.path.join(data_dir, 'vgg')
@@ -156,12 +179,17 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
-        a = load_vgg(sess, vgg_path)
+        image_input, keep_prob, layer3_out, layer4_out, layer7_out = load_vgg(sess, vgg_path)
+
+        layer_output = layers(layer3_out, layer4_out, layer7_out, num_classes)
+        logits, train_op, cross_entropy_loss = optimize(layer_output, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
+        train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, image_input,
+                 correct_label, keep_prob, learning_rate)
 
         # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, image_input)
 
         # OPTIONAL: Apply the trained model to a video
 

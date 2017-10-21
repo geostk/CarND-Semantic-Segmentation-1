@@ -60,28 +60,34 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     
     predict1 = tf.layers.conv2d(vgg_layer7_out, filters=num_classes, kernel_size=1, padding='same',
-                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
         
     
     conv7_4x = tf.layers.conv2d_transpose(predict1, filters=num_classes, kernel_size=4, strides=4, padding="same",
-                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
 
     predict2 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=1, padding='same',
-                                     kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     pool4_2x = tf.layers.conv2d_transpose(predict2, filters=num_classes, kernel_size=4, strides=2, padding="same",
-                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     
     pool3 = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=1, padding='same',
-                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
 
     fuse = conv7_4x + pool4_2x + pool3
 
     upsampled_8x = tf.layers.conv2d_transpose(fuse, filters=num_classes, kernel_size=4, strides=8, padding="same",
-                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                              kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
     return upsampled_8x
 
@@ -101,10 +107,10 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     # TODO: Implement function
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
 
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))    
 
     loss_op = tf.reduce_mean(cross_entropy_loss)
-    opt = tf.train.AdamOptimizer()
+    opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_op = opt.minimize(loss_op)
 
 
@@ -129,16 +135,38 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     """
     # TODO: Implement function
     sess.run(tf.global_variables_initializer())
+
     for i in range(epochs):
         #t0 = time.time()
+        total_loss = 0
         j = 0
         for image, label in get_batches_fn(batch_size):
             j += 1
-            print("batch: ", j)
             image = image.astype(float)
             label = label.astype(float)
             _,loss = sess.run([train_op, cross_entropy_loss], feed_dict={input_image: image, correct_label: label, keep_prob:0.5, learning_rate:0.001})
-            print("loss =", loss)
+            total_loss += loss
+
+        print("Epoch: ", i+1," of ", epochs, " Loss = ", total_loss/j)
+
+
+        
+"""
+        output_dir = os.path.join("./runs", "Epoch"+str(i+1))
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
+
+        logits = tf.placeholder(tf.float32)
+        image_output = helper.gen_test_output(
+        sess, logits, keep_prob, input_image, os.path.join('./data', 'data_road/example'), image_shape)
+
+        for name, image in image_outputs:
+            scipy.misc.imsave(os.path.join(output_dir, name), image)
+
+        #saver.save(sess, output_dir + str(i))
+"""
+        
 
 tests.test_train_nn(train_nn)
 
@@ -166,8 +194,8 @@ def run():
 
     #input_image = None
     #learning_rate = None
-    epochs = 1
-    batch_size = 2
+    epochs = 10
+    batch_size = 10
 
     with tf.Session() as sess:
         # Path to vgg model

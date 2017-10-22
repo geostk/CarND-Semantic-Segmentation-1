@@ -1,0 +1,32 @@
+epochs = 20
+batch_size = 10
+
+conv7_4x -----> kernel_size=4
+
+pool4_2x -----> kernel_size=2
+
+upsampled_8x -> kernel_size=8
+
+
+Epoch:  1  of  20  Loss =  0.665347746734
+Epoch:  2  of  20  Loss =  0.2366344307
+Epoch:  3  of  20  Loss =  0.177491662831
+Epoch:  4  of  20  Loss =  0.170923017736
+Epoch:  5  of  20  Loss =  0.14940793915
+Epoch:  6  of  20  Loss =  0.143251738929
+Epoch:  7  of  20  Loss =  0.13533744627
+Epoch:  8  of  20  Loss =  0.125527227747
+Epoch:  9  of  20  Loss =  0.118126762067
+Epoch:  10  of  20  Loss =  0.120148052686
+Epoch:  11  of  20  Loss =  0.10775877227
+Epoch:  12  of  20  Loss =  0.0982732063737
+Epoch:  13  of  20  Loss =  0.0858488860058
+Epoch:  14  of  20  Loss =  0.082336837747
+Epoch:  15  of  20  Loss =  0.0766251644698
+Epoch:  16  of  20  Loss =  0.0681611356036
+Epoch:  17  of  20  Loss =  0.0684611857708
+Epoch:  18  of  20  Loss =  0.0653859362777
+Epoch:  19  of  20  Loss =  0.0611180308564
+Epoch:  20  of  20  Loss =  0.0570148043334
+
+

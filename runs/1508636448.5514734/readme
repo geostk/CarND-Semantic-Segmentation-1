@@ -1,0 +1,8 @@
+epochs = 5
+batch_size = 10
+
+conv7_4x -----> kernel_size=16
+
+pool4_2x -----> kernel_size=8
+
+upsampled_8x -> kernel_size=32

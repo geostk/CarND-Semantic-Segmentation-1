@@ -148,24 +148,6 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             total_loss += loss
 
         print("Epoch: ", i+1," of ", epochs, " Loss = ", total_loss/j)
-
-
-        
-"""
-        output_dir = os.path.join("./runs", "Epoch"+str(i+1))
-        if os.path.exists(output_dir):
-            shutil.rmtree(output_dir)
-        os.makedirs(output_dir)
-
-        logits = tf.placeholder(tf.float32)
-        image_output = helper.gen_test_output(
-        sess, logits, keep_prob, input_image, os.path.join('./data', 'data_road/example'), image_shape)
-
-        for name, image in image_outputs:
-            scipy.misc.imsave(os.path.join(output_dir, name), image)
-
-        #saver.save(sess, output_dir + str(i))
-"""
         
 
 tests.test_train_nn(train_nn)
@@ -188,7 +170,7 @@ def run():
     # Add some variables   
     correct_label = tf.placeholder(tf.float32, shape=[None,160,576,num_classes],name='my_correct_label')
     learning_rate = tf.placeholder(tf.float32, name='my_learning_rate')
-    epochs = 5
+    epochs = 20
     batch_size = 10
 
     with tf.Session() as sess:

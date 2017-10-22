@@ -64,7 +64,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
         
     
-    conv7_4x = tf.layers.conv2d_transpose(predict1, filters=num_classes, kernel_size=4, strides=4, padding="same",
+    conv7_4x = tf.layers.conv2d_transpose(predict1, filters=num_classes, kernel_size=8, strides=4, padding="same",
                                           kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
@@ -85,7 +85,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     fuse = conv7_4x + pool4_2x + pool3
 
-    upsampled_8x = tf.layers.conv2d_transpose(fuse, filters=num_classes, kernel_size=4, strides=8, padding="same",
+    upsampled_8x = tf.layers.conv2d_transpose(fuse, filters=num_classes, kernel_size=16, strides=8, padding="same",
                                               kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
                                               kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
@@ -185,16 +185,10 @@ def run():
     # You'll need a GPU with at least 10 teraFLOPS to train on.
     #  https://www.cityscapes-dataset.com/
 
-    # Add some variables
-    #correct_label = tf.placeholder(tf.float64, shape=[None,160,576,num_classes])
-    #input_image = tf.placeholder(tf.float64, shape=[None,160,576,3])
-    
+    # Add some variables   
     correct_label = tf.placeholder(tf.float32, shape=[None,160,576,num_classes],name='my_correct_label')
     learning_rate = tf.placeholder(tf.float32, name='my_learning_rate')
-
-    #input_image = None
-    #learning_rate = None
-    epochs = 10
+    epochs = 5
     batch_size = 10
 
     with tf.Session() as sess:
